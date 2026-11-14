@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2C Vocabulary - Common Complaints Dialogue Ordering</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .drag-handle {
+            cursor: grab;
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+        .strip-item.dragging {
+            opacity: 0.5;
+            scale: 0.98;
+        }
+        .strip-item.drag-over {
+            border-top: 3px solid #4f46e5;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <!-- Header Section -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 text-white p-2.5 rounded-xl shadow-md">
+                    <i data-lucide="scissors" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">2C Vocabulary</span>
+                    <h1 class="text-xl font-bold text-slate-900">Common Complaints: Dialogue Ordering</h1>
+                </div>
+            </div>
+
+            <!-- Score Badge -->
+            <div id="scoreBadge" class="hidden items-center bg-indigo-50 border border-indigo-100 rounded-lg px-3.5 py-1.5 text-indigo-900 font-semibold text-sm">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-indigo-600 mr-2"></i>
+                <span>Score: <span id="scoreText">0 / 10</span></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-4xl mx-auto px-4 py-6 w-full flex-grow">
+        
+        <!-- Instruction Box -->
+        <div class="mb-6 p-4 bg-indigo-50/70 border border-indigo-100 rounded-xl text-indigo-950 flex items-start gap-3">
+            <i data-lucide="info" class="w-5 h-5 text-indigo-600 flex-shrink-0 mt-0.5"></i>
+            <p class="text-sm leading-relaxed">
+                Reorder the dialogue strips below into the correct logical sequence. Drag and drop the cards or use the up/down arrows to arrange them, then click <strong>Check Order</strong>.
+            </p>
+        </div>
+
+        <!-- Scrambled Dialogue List -->
+        <ul id="stripList" class="space-y-3">
+            <!-- Dynamically populated -->
+        </ul>
+
+        <!-- Feedback Alert Toast -->
+        <div id="feedbackBox" class="hidden mt-6 p-4 rounded-xl border flex items-center gap-3">
+            <i id="feedbackIcon" class="w-6 h-6 flex-shrink-0"></i>
+            <div>
+                <h4 id="feedbackTitle" class="font-bold text-sm"></h4>
+                <p id="feedbackMessage" class="text-xs mt-0.5"></p>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-8 flex flex-wrap items-center justify-between gap-3 p-4 bg-white rounded-xl border border-slate-200 shadow-sm sticky bottom-4 z-20">
+            <div class="flex items-center gap-2">
+                <button onclick="checkOrder()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm rounded-lg shadow-sm transition flex items-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4"></i> Check Order
+                </button>
+                <button onclick="revealCorrectOrder()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm rounded-lg transition flex items-center gap-1.5">
+                    <i data-lucide="eye" class="w-4 h-4"></i> Show Correct Order
+                </button>
+            </div>
+            <button onclick="scrambleAndReset()" class="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-medium text-sm rounded-lg transition flex items-center gap-1.5">
+                <i data-lucide="shuffle" class="w-4 h-4"></i> Reset / Scramble
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-8 bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+        <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <span>2C English Dialogue Ordering Exercise</span>
+            <span>Vocabulary: Common Complaints</span>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Master Dialogue in Correct Order (1 to 10)
+        const originalDialogue = [
+            { id: 1, speaker: 'A', text: `Grrr, that was a <strong>cold caller</strong>, trying to get me to change broadband companies.` },
+            { id: 2, speaker: 'B', text: `Oh no, <strong>aggressive salespeople</strong> are the worst!` },
+            { id: 3, speaker: 'A', text: `Yeah, the guy kept pushing me to answer questions. I can't stand being pressured by <strong>rude staff</strong>, but I still felt bad hanging up!` },
+            { id: 4, speaker: 'B', text: `That reminds me of your laptop that wouldn't charge. I remember you felt sorry for the salesperson, even though he was the one who had sold you a <strong>faulty product</strong>!` },
+            { id: 5, speaker: 'A', text: `I did, until I became absolutely infuriated by all his <strong>broken promises</strong> to credit my account with the refund!` },
+            { id: 6, speaker: 'B', text: `Oh yeah, that <strong>billing dispute</strong> went on for ages. Did you ever resolve it?` },
+            { id: 7, speaker: 'A', text: `Sadly, I couldn't. The company ads saying 'customers are our number one' really annoy me. It's completely <strong>false advertising</strong>! By the way, have your new trainers arrived?` },
+            { id: 8, speaker: 'B', text: `They have, thanks. I eventually got them last week, but two months after I placed my order. Talk about <strong>slow delivery</strong>! And there was no apology or anything!` },
+            { id: 9, speaker: 'A', text: `There never is! It's the <strong>lack of communication</strong> from these companies that I find most irritating.` },
+            { id: 10, speaker: 'B', text: `I wonder if everyone has as many <strong>poor customer service</strong> experiences as we do!` }
+        ];
+
+        let currentOrder = [];
+        let draggedItemIndex = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            scrambleAndReset();
+        });
+
+        // Fisher-Yates Shuffle algorithm
+        function shuffle(array) {
+            let shuffled = [...array];
+            do {
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+            } while (isAlreadyCorrect(shuffled)); // Ensure it starts randomized
+            return shuffled;
+        }
+
+        function isAlreadyCorrect(arr) {
+            return arr.every((item, idx) => item.id === idx + 1);
+        }
+
+        // Scramble dialogue & render UI
+        function scrambleAndReset() {
+            currentOrder = shuffle(originalDialogue);
+            hideFeedback();
+            document.getElementById('scoreBadge').classList.add('hidden');
+            renderList();
+        }
+
+        // Render strips
+        function renderList(validationResults = null) {
+            const listContainer = document.getElementById('stripList');
+            listContainer.innerHTML = '';
+
+            currentOrder.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.draggable = true;
+                li.dataset.index = index;
+
+                let borderStyle = "border-slate-200 bg-white";
+                let statusBadge = "";
+
+                if (validationResults) {
+                    const isCorrect = validationResults[index];
+                    if (isCorrect) {
+                        borderStyle = "border-emerald-400 bg-emerald-50/50";
+                        statusBadge = `<span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1"><i data-lucide="check" class="w-3.5 h-3.5"></i> Correct</span>`;
+                    } else {
+                        borderStyle = "border-rose-400 bg-rose-50/50";
+                        statusBadge = `<span class="bg-rose-100 text-rose-800 text-xs font-bold px-2 py-0.5 rounded flex items-center gap-1"><i data-lucide="x" class="w-3.5 h-3.5"></i> Misplaced</span>`;
+                    }
+                }
+
+                const speakerBadge = item.speaker === 'A' 
+                    ? 'bg-blue-100 text-blue-800' 
+                    : 'bg-indigo-100 text-indigo-800';
+
+                li.className = `strip-item flex items-center justify-between p-3 sm:p-4 rounded-xl border shadow-sm transition-all ${borderStyle}`;
+
+                li.innerHTML = `
+                    <div class="flex items-center gap-3 flex-grow pr-2">
+                        <!-- Drag Grip Icon -->
+                        <div class="drag-handle text-slate-400 hover:text-slate-600 p-1 flex-shrink-0">
+                            <i data-lucide="grip-vertical" class="w-5 h-5"></i>
+                        </div>
+                        
+                        <!-- Line Index -->
+                        <span class="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 font-semibold text-xs flex-shrink-0">
+                            ${index + 1}
+                        </span>
+
+                        <!-- Speaker Pill -->
+                        <span class="font-bold text-xs px-2.5 py-1 rounded-md flex-shrink-0 ${speakerBadge}">
+                            ${item.speaker}
+                        </span>
+
+                        <!-- Text Content -->
+                        <div class="text-sm sm:text-base text-slate-800 leading-relaxed font-normal flex-grow">
+                            ${item.text}
+                        </div>
+                    </div>
+
+                    <!-- Right Controls (Up/Down Buttons & Validation Status) -->
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        ${statusBadge}
+                        <div class="flex flex-col sm:flex-row gap-1">
+                            <button onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled' : ''} class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-slate-600 transition" title="Move Up">
+                                <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="moveItem(${index}, 1)" ${index === currentOrder.length - 1 ? 'disabled' : ''} class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-slate-600 transition" title="Move Down">
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Drag & Drop Event Listeners
+                li.addEventListener('dragstart', handleDragStart);
+                li.addEventListener('dragover', handleDragOver);
+                li.addEventListener('dragleave', handleDragLeave);
+                li.addEventListener('drop', handleDrop);
+                li.addEventListener('dragend', handleDragEnd);
+
+                listContainer.appendChild(li);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Up/Down Button Movements
+        function moveItem(index, direction) {
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= currentOrder.length) return;
+
+            const temp = currentOrder[index];
+            currentOrder[index] = currentOrder[targetIndex];
+            currentOrder[targetIndex] = temp;
+
+            hideFeedback();
+            renderList();
+        }
+
+        // Drag & Drop Handling
+        function handleDragStart(e) {
+            draggedItemIndex = parseInt(this.dataset.index);
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            this.classList.add('drag-over');
+        }
+
+        function handleDragLeave() {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            const dropIndex = parseInt(this.dataset.index);
+
+            if (draggedItemIndex !== null && draggedItemIndex !== dropIndex) {
+                const draggedItem = currentOrder.splice(draggedItemIndex, 1)[0];
+                currentOrder.splice(dropIndex, 0, draggedItem);
+                hideFeedback();
+                renderList();
+            }
+        }
+
+        function handleDragEnd() {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.strip-item').forEach(el => el.classList.remove('drag-over'));
+        }
+
+        // Check Order Logic
+        function checkOrder() {
+            let correctCount = 0;
+            const validationResults = currentOrder.map((item, idx) => {
+                const isCorrect = item.id === idx + 1;
+                if (isCorrect) correctCount++;
+                return isCorrect;
+            });
+
+            renderList(validationResults);
+
+            const total = originalDialogue.length;
+            const scoreText = document.getElementById('scoreText');
+            const scoreBadge = document.getElementById('scoreBadge');
+            
+            scoreText.innerText = `${correctCount} / ${total}`;
+            scoreBadge.classList.remove('hidden');
+            scoreBadge.classList.add('flex');
+
+            const feedbackBox = document.getElementById('feedbackBox');
+            const feedbackIcon = document.getElementById('feedbackIcon');
+            const feedbackTitle = document.getElementById('feedbackTitle');
+            const feedbackMessage = document.getElementById('feedbackMessage');
+
+            feedbackBox.classList.remove('hidden', 'bg-emerald-50', 'border-emerald-200', 'text-emerald-950', 'bg-amber-50', 'border-amber-200', 'text-amber-950');
+
+            if (correctCount === total) {
+                feedbackBox.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-950');
+                feedbackIcon.className = "w-6 h-6 text-emerald-600 flex-shrink-0";
+                feedbackTitle.innerText = "Perfect Sequence! 🎉";
+                feedbackMessage.innerText = "You have reconstructed the entire conversation in the exact correct order.";
+            } else {
+                feedbackBox.classList.add('bg-amber-50', 'border-amber-200', 'text-amber-950');
+                feedbackIcon.className = "w-6 h-6 text-amber-600 flex-shrink-0";
+                feedbackTitle.innerText = `Almost there! (${correctCount}/${total} correct)`;
+                feedbackMessage.innerText = "Strips highlighted in green are in the correct place. Adjust the misplaced strips in red and try again.";
+            }
+        }
+
+        // Show Correct Order
+        function revealCorrectOrder() {
+            currentOrder = [...originalDialogue];
+            const validationResults = new Array(originalDialogue.length).fill(true);
+            renderList(validationResults);
+
+            const scoreText = document.getElementById('scoreText');
+            const scoreBadge = document.getElementById('scoreBadge');
+            scoreText.innerText = `${originalDialogue.length} / ${originalDialogue.length}`;
+            scoreBadge.classList.remove('hidden');
+            scoreBadge.classList.add('flex');
+
+            hideFeedback();
+        }
+
+        function hideFeedback() {
+            document.getElementById('feedbackBox').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
